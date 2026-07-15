@@ -794,7 +794,13 @@ async function correlativo(met){
   const mid=metNorm(met);
   const rows=await sbFetch("correlativos",{filtros:`metodo=eq.${mid}`});
   const n=(rows[0]?.valor||0)+1;
-  await sbPatch("correlativos",mid,{valor:n});
+  // Usar metodo como clave (no id)
+  const res=await fetch(`${SB_URL}/rest/v1/correlativos?metodo=eq.${mid}&apikey=${SB_KEY}`,{
+    method:"PATCH",
+    headers:sbHeaders({"Prefer":"return=representation"}),
+    body:JSON.stringify({valor:n})
+  });
+  if(!res.ok)throw new Error(await res.text());
   const m=findMet(mid);
   return(m?.pre||"EF")+String(n).padStart(5,"0");
 }
