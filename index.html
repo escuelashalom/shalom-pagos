@@ -235,7 +235,16 @@ tbody tr:hover{background:#eff6ff;}
 .u-rol-admin{background:#dbeafe;color:#1e40af;}
 .u-rol-dir{background:#d1fae5;color:#065f46;}
 
-@media print{
+/* Inventario */
+.inv-card{background:#fff;border-radius:11px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-left:4px solid #1e3a8a;}
+.inv-card-prenda{font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+.inv-card-nombre{font-size:1rem;font-weight:800;color:#1e293b;margin:3px 0;}
+.inv-card-nums{display:flex;gap:12px;margin-top:8px;}
+.inv-num{text-align:center;}
+.inv-num-val{font-size:1.3rem;font-weight:800;}
+.inv-num-lbl{font-size:.66rem;color:#64748b;}
+.stock-ok{color:#059669;} .stock-bajo{color:#f59e0b;} .stock-agotado{color:#dc2626;}
+
   #cfg-screen,#login-screen,.loader-overlay,header,.tabs,.filtros,.cards,
   .c-filtros,.pend-box,.abtns,.panel:not(#panel-cierre),
   .overlay:not(#modal-recibo){display:none!important;}
@@ -313,6 +322,7 @@ tbody tr:hover{background:#eff6ff;}
     <button class="tab active" onclick="irTab('pagos',this)">💰 Pagos</button>
     <button class="tab" id="tab-cierre" onclick="irTab('cierre',this)">📊 Cierre</button>
     <button class="tab" id="tab-alumnos" onclick="irTab('alumnos',this)">👩‍🎓 Alumnos</button>
+    <button class="tab" id="tab-inventario" onclick="irTab('inventario',this)">👕 Inventario</button>
     <button class="tab" id="tab-usuarios" onclick="irTab('usuarios',this)">👥 Usuarios</button>
   </div>
 </header>
@@ -385,6 +395,69 @@ tbody tr:hover{background:#eff6ff;}
     <button class="btn-xl" onclick="excelAlumnos()">⬇️ Exportar Excel</button>
   </div>
   <div class="ggrid" id="ggrid"></div>
+</div>
+
+<!-- INVENTARIO -->
+<div id="panel-inventario" class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <h2 style="font-size:.95rem;font-weight:700;color:#1e293b;">👕 Inventario de Uniformes</h2>
+    <div style="display:flex;gap:7px;">
+      <button class="btn-ok" style="flex:0;padding:8px 14px;" onclick="abrirIngreso()">+ Ingresar Stock</button>
+      <button class="btn-xl" onclick="excelInventario()">⬇️ Excel</button>
+    </div>
+  </div>
+  <!-- Resumen por prenda -->
+  <div id="inv-resumen" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px;"></div>
+  <!-- Filtro -->
+  <div style="background:#fff;border-radius:11px;padding:11px;box-shadow:0 1px 3px rgba(0,0,0,.07);display:flex;flex-wrap:wrap;gap:8px;margin-bottom:13px;align-items:center;">
+    <select id="inv-f-prenda" onchange="renderInventario()" style="border:1px solid #e2e8f0;border-radius:7px;padding:7px 9px;font-size:.8rem;outline:none;flex:1;min-width:140px;">
+      <option value="">Todas las prendas</option>
+      <option>Buso</option><option>Camisa PE</option><option>Camisa Polo</option>
+    </select>
+    <select id="inv-f-talla" onchange="renderInventario()" style="border:1px solid #e2e8f0;border-radius:7px;padding:7px 9px;font-size:.8rem;outline:none;flex:1;min-width:120px;">
+      <option value="">Todas las tallas</option>
+    </select>
+    <select id="inv-f-estado" onchange="renderInventario()" style="border:1px solid #e2e8f0;border-radius:7px;padding:7px 9px;font-size:.8rem;outline:none;">
+      <option value="">Todo el stock</option>
+      <option value="disponible">Con stock disponible</option>
+      <option value="agotado">Agotados</option>
+    </select>
+  </div>
+  <!-- Tabla -->
+  <div style="background:#fff;border-radius:11px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+      <thead><tr style="background:#1e3a8a;">
+        <th style="padding:9px 12px;text-align:left;color:#fff;font-size:.76rem;">Prenda</th>
+        <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Talla</th>
+        <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Stock inicial</th>
+        <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Vendidas</th>
+        <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Disponible</th>
+        <th style="padding:9px 12px;text-align:right;color:#fff;font-size:.76rem;">Precio</th>
+        <th style="padding:9px 12px;text-align:right;color:#fff;font-size:.76rem;">Valor stock</th>
+        <th style="padding:9px 12px;text-align:left;color:#fff;font-size:.76rem;">Último ingreso</th>
+        <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Acción</th>
+      </tr></thead>
+      <tbody id="inv-tbody"></tbody>
+    </table>
+  </div>
+  <!-- Historial ventas -->
+  <div style="margin-top:16px;">
+    <h3 style="font-size:.86rem;font-weight:700;color:#1e293b;margin-bottom:9px;">📋 Historial de ventas de uniformes</h3>
+    <div style="background:#fff;border-radius:11px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:.8rem;">
+        <thead><tr style="background:#f8faff;">
+          <th style="padding:8px 11px;text-align:left;font-weight:600;color:#475569;font-size:.74rem;">Fecha</th>
+          <th style="padding:8px 11px;text-align:left;font-weight:600;color:#475569;font-size:.74rem;">Prenda</th>
+          <th style="padding:8px 11px;text-align:center;font-weight:600;color:#475569;font-size:.74rem;">Talla</th>
+          <th style="padding:8px 11px;text-align:center;font-weight:600;color:#475569;font-size:.74rem;">Cant.</th>
+          <th style="padding:8px 11px;text-align:left;font-weight:600;color:#475569;font-size:.74rem;">Alumno</th>
+          <th style="padding:8px 11px;text-align:right;font-weight:600;color:#475569;font-size:.74rem;">Total</th>
+          <th style="padding:8px 11px;text-align:left;font-weight:600;color:#475569;font-size:.74rem;">Registrado por</th>
+        </tr></thead>
+        <tbody id="inv-ventas-tbody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- USUARIOS (solo admin) -->
@@ -759,6 +832,7 @@ function configurarUI(){
   $("tab-alumnos").style.display=isAdmin?"block":"none";
   $("tab-cierre").style.display=isAdmin?"block":"none";
   $("tab-usuarios").style.display=isAdmin?"block":"none";
+  $("tab-inventario").style.display=isAdmin?"block":"none";
   // Selects
   $("f-grad").innerHTML='<option value="">Todos los grados</option>'+GRADOS.map(g=>`<option>${g}</option>`).join("");
   $("f-mes").innerHTML='<option value="">Todos los meses</option>'+MESES.map(m=>`<option${m===MES_ACT?" selected":""}>${m}</option>`).join("");
@@ -831,6 +905,7 @@ function irTab(id,btn){
   if(id==="alumnos")renderAlumnos();
   if(id==="cierre")renderCierre();
   if(id==="usuarios")renderUsuarios();
+  if(id==="inventario"){cargarInventario().then(()=>renderInventario());}
 }
 
 // ════════════════════════════════════════════
@@ -963,8 +1038,8 @@ function cambiarFiltroPendiente(){
         <td style="font-size:.78rem;font-weight:600;">${f.alumno.nombre}${f.alumno.obs?` <span style="color:#9d174d;font-size:.66rem;">(${f.alumno.obs})</span>`:""}</td>
         <td>${f.mesesDeuda.map(m=>`<span style="display:inline-block;background:#fee2e2;color:#991b1b;border-radius:4px;padding:1px 5px;margin:1px;font-size:.68rem;font-weight:600;">${m}</span>`).join("")}</td>
         <td style="text-align:center;font-size:.76rem;">${f.mesesDeuda.length}</td>
-        <td style="text-align:right;font-size:.76rem;color:#475569;">${f.cuota?fmt(f.cuota):"—"}</td>
-        <td style="text-align:right;font-weight:700;color:#dc2626;font-size:.8rem;">${f.cuota?fmt(f.total):"—"}</td>
+        <td style="text-align:right;font-size:.76rem;color:#475569;">${usuarioActual?.rol==="administrador"?( f.cuota?fmt(f.cuota):"—"):"——"}</td>
+        <td style="text-align:right;font-weight:700;color:#dc2626;font-size:.8rem;">${usuarioActual?.rol==="administrador"?(f.cuota?fmt(f.total):"—"):"——"}</td>
         <td><button style="background:#fff;border:1px solid #fecaca;border-radius:7px;padding:3px 8px;font-size:.7rem;cursor:pointer;color:#991b1b;" onclick="abrirPago('${f.alumno.id}')">Registrar →</button></td>
       </tr>`;
     });
@@ -978,7 +1053,7 @@ function cambiarFiltroPendiente(){
       </div>
       <div style="text-align:right;">
         <div style="font-size:.66rem;color:#64748b;">Total adeudado</div>
-        <div style="font-size:1.1rem;font-weight:800;color:#dc2626;">${fmt(totG)}</div>
+        <div style="font-size:1.1rem;font-weight:800;color:#dc2626;">${usuarioActual?.rol==="administrador"?fmt(totG):"——"}</div>
       </div>
     </div>
     <div style="background:#fff;border-radius:11px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow-x:auto;">
@@ -1540,6 +1615,202 @@ function excelPendientes(){
 }
 
 // ════════════════════════════════════════════
+// INVENTARIO
+// ════════════════════════════════════════════
+const TALLAS=["4","6","8","10","12","14","16","18","XS","S","M","L","XL"];
+const PRENDAS=["Buso","Camisa PE","Camisa Polo"];
+const PRECIO_BASE=390;
+let inventario=[], ventasInv=[], invSelId="";
+
+async function cargarInventario(){
+  try{
+    const [inv,vtas]=await Promise.all([
+      sbFetch("inventario",{filtros:"order=created_at.desc"}),
+      sbFetch("ventas_inventario",{filtros:"order=created_at.desc"})
+    ]);
+    inventario=inv; ventasInv=vtas;
+  }catch(e){
+    // Si las tablas no existen aún, inicializar vacío
+    inventario=[]; ventasInv=[];
+  }
+}
+
+function renderInventario(){
+  const fPrenda=$("inv-f-prenda").value;
+  const fTalla=$("inv-f-talla").value;
+  const fEstado=$("inv-f-estado").value;
+
+  // Resumen por prenda
+  $("inv-resumen").innerHTML=PRENDAS.map(p=>{
+    const items=inventario.filter(i=>i.prenda===p);
+    const total=items.reduce((s,i)=>s+i.stock_actual,0);
+    const vendidas=ventasInv.filter(v=>v.prenda===p).reduce((s,v)=>s+v.cantidad,0);
+    const cls=total===0?"stock-agotado":total<=5?"stock-bajo":"stock-ok";
+    return`<div class="inv-card">
+      <div class="inv-card-prenda">👕 ${p}</div>
+      <div class="inv-card-nums">
+        <div class="inv-num"><div class="inv-num-val ${cls}">${total}</div><div class="inv-num-lbl">Disponible</div></div>
+        <div class="inv-num"><div class="inv-num-val" style="color:#475569;">${vendidas}</div><div class="inv-num-lbl">Vendidas</div></div>
+        <div class="inv-num"><div class="inv-num-val" style="color:#1e3a8a;">${fmt(total*PRECIO_BASE)}</div><div class="inv-num-lbl">Valor stock</div></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Poblar select de tallas
+  const tallaSel=$("inv-f-talla");
+  const tallaActual=tallaSel.value;
+  tallaSel.innerHTML='<option value="">Todas las tallas</option>'+TALLAS.map(t=>`<option${t===tallaActual?" selected":""}>${t}</option>`).join("");
+
+  // Filtrar inventario
+  let fil=inventario;
+  if(fPrenda) fil=fil.filter(i=>i.prenda===fPrenda);
+  if(fTalla)  fil=fil.filter(i=>i.talla===fTalla);
+  if(fEstado==="disponible") fil=fil.filter(i=>i.stock_actual>0);
+  if(fEstado==="agotado") fil=fil.filter(i=>i.stock_actual===0);
+
+  const tb=$("inv-tbody");
+  if(!fil.length){tb.innerHTML=`<tr><td colspan="9" class="empty">Sin registros de inventario. Clic en <strong>+ Ingresar Stock</strong>.</td></tr>`;
+  }else{
+    tb.innerHTML=fil.map(i=>{
+      const vendidas=ventasInv.filter(v=>v.inv_id===i.id).reduce((s,v)=>s+v.cantidad,0);
+      const cls=i.stock_actual===0?"stock-agotado":i.stock_actual<=3?"stock-bajo":"stock-ok";
+      return`<tr>
+        <td style="font-weight:700;">${i.prenda}</td>
+        <td style="text-align:center;"><span style="background:#dbeafe;color:#1e40af;border-radius:5px;padding:2px 8px;font-size:.76rem;font-weight:700;">${i.talla}</span></td>
+        <td style="text-align:center;color:#64748b;">${i.stock_inicial}</td>
+        <td style="text-align:center;color:#7c3aed;">${vendidas}</td>
+        <td style="text-align:center;font-weight:700;" class="${cls}">${i.stock_actual}</td>
+        <td style="text-align:right;">${fmt(i.precio||PRECIO_BASE)}</td>
+        <td style="text-align:right;font-weight:700;color:#1e3a8a;">${fmt(i.stock_actual*(i.precio||PRECIO_BASE))}</td>
+        <td style="font-size:.72rem;color:#64748b;">${i.fecha_ingreso||"—"}</td>
+        <td style="text-align:center;">
+          ${i.stock_actual>0
+            ?`<button class="btn-reimp" onclick="abrirVentaInv('${i.id}')" style="background:#f0fdf4;border-color:#86efac;color:#065f46;">🛍️ Vender</button>`
+            :`<span style="font-size:.7rem;color:#dc2626;font-weight:700;">Agotado</span>`}
+        </td>
+      </tr>`;
+    }).join("");
+  }
+
+  // Historial ventas
+  const vtb=$("inv-ventas-tbody");
+  if(!ventasInv.length){vtb.innerHTML=`<tr><td colspan="7" class="empty">Sin ventas registradas.</td></tr>`;}
+  else{
+    vtb.innerHTML=[...ventasInv].slice(0,50).map(v=>`<tr>
+      <td style="font-size:.74rem;color:#64748b;white-space:nowrap;">${v.fecha||"—"}</td>
+      <td style="font-weight:600;">${v.prenda}</td>
+      <td style="text-align:center;"><span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 6px;font-size:.72rem;">${v.talla}</span></td>
+      <td style="text-align:center;">${v.cantidad}</td>
+      <td style="font-size:.76rem;">${v.alumno||"—"}</td>
+      <td style="text-align:right;font-weight:700;color:#1e3a8a;">${fmt(v.total)}</td>
+      <td style="font-size:.74rem;color:#64748b;">${v.usuario_nombre||"—"}</td>
+    </tr>`).join("");
+  }
+}
+
+// INGRESAR STOCK
+function abrirIngreso(){
+  $("ing-prenda").value="";
+  $("ing-talla").innerHTML='<option value="">— Selecciona —</option>'+TALLAS.map(t=>`<option>${t}</option>`).join("");
+  $("ing-cant").value="";
+  $("ing-precio").value=PRECIO_BASE;
+  $("ing-nota").value="";
+  $("modal-ingreso").classList.add("open");
+}
+
+async function guardarIngreso(){
+  const prenda=$("ing-prenda").value, talla=$("ing-talla").value;
+  const cant=parseInt($("ing-cant").value)||0, precio=parseFloat($("ing-precio").value)||PRECIO_BASE;
+  const nota=$("ing-nota").value.trim();
+  if(!prenda||!talla||cant<1){alert("Completa todos los campos obligatorios.");return;}
+  loader(true,"Guardando…");
+  try{
+    // Buscar si ya existe esa prenda+talla en inventario
+    const existe=inventario.find(i=>i.prenda===prenda&&i.talla===talla);
+    if(existe){
+      // Actualizar stock
+      const nuevoInicial=existe.stock_inicial+cant;
+      const nuevoActual=existe.stock_actual+cant;
+      const res=await fetch(`${SB_URL}/rest/v1/inventario?id=eq.${existe.id}&apikey=${SB_KEY}`,{
+        method:"PATCH",
+        headers:sbHeaders({"Prefer":"return=representation"}),
+        body:JSON.stringify({stock_inicial:nuevoInicial,stock_actual:nuevoActual,fecha_ingreso:HOY_STR,precio,nota})
+      });
+      if(!res.ok)throw new Error(await res.text());
+      existe.stock_inicial=nuevoInicial; existe.stock_actual=nuevoActual;
+      existe.fecha_ingreso=HOY_STR; existe.precio=precio;
+    } else {
+      // Crear nuevo registro
+      const nid=genId();
+      const rows=await sbPost("inventario",{id:nid,prenda,talla,stock_inicial:cant,stock_actual:cant,precio,nota,fecha_ingreso:HOY_STR});
+      inventario.push(rows[0]||{id:nid,prenda,talla,stock_inicial:cant,stock_actual:cant,precio,nota,fecha_ingreso:HOY_STR});
+    }
+    cerrar(); renderInventario();
+  }catch(e){
+    if(e.message.includes("does not exist")||e.message.includes("relation")){
+      alert("Necesitas crear las tablas en Supabase. Ve a SQL Editor y ejecuta el SQL de inventario.");
+    }else alert("Error: "+e.message);
+  }
+  finally{loader(false);}
+}
+
+// VENDER
+function abrirVentaInv(id){
+  const item=inventario.find(i=>i.id===id);if(!item)return;
+  invSelId=id;
+  $("venta-inv-info").innerHTML=`<strong>${item.prenda}</strong> — Talla <strong>${item.talla}</strong><br>
+    Disponible: <strong style="color:#059669;">${item.stock_actual} unidades</strong> · Precio: <strong>${fmt(item.precio||PRECIO_BASE)}</strong> c/u`;
+  $("venta-cant").value=1; $("venta-cant").max=item.stock_actual;
+  $("venta-alumno").value="";
+  calcVentaInv();
+  $("modal-venta-inv").classList.add("open");
+}
+
+function calcVentaInv(){
+  const item=inventario.find(i=>i.id===invSelId);if(!item)return;
+  const cant=parseInt($("venta-cant").value)||1;
+  const precio=item.precio||PRECIO_BASE;
+  $("venta-inv-desc").textContent=`${cant} × ${fmt(precio)} =`;
+  $("venta-inv-tot").textContent=fmt(cant*precio);
+}
+
+async function confirmarVentaInv(){
+  const item=inventario.find(i=>i.id===invSelId);if(!item)return;
+  const cant=parseInt($("venta-cant").value)||1;
+  const alumno=$("venta-alumno").value.trim();
+  if(cant<1||cant>item.stock_actual){alert(`Cantidad inválida. Disponible: ${item.stock_actual}`);return;}
+  loader(true,"Registrando venta…");
+  try{
+    // Actualizar stock
+    const nuevoActual=item.stock_actual-cant;
+    const res=await fetch(`${SB_URL}/rest/v1/inventario?id=eq.${item.id}&apikey=${SB_KEY}`,{
+      method:"PATCH",headers:sbHeaders({"Prefer":"return=representation"}),
+      body:JSON.stringify({stock_actual:nuevoActual})
+    });
+    if(!res.ok)throw new Error(await res.text());
+    // Registrar venta
+    const venta={id:genId(),inv_id:item.id,prenda:item.prenda,talla:item.talla,
+      cantidad:cant,precio_unit:item.precio||PRECIO_BASE,total:cant*(item.precio||PRECIO_BASE),
+      alumno,fecha:HOY_STR,hora:HOY.toLocaleTimeString("es-HN",{hour:"2-digit",minute:"2-digit"}),
+      usuario_nombre:usuarioActual.nombre};
+    await sbPost("ventas_inventario",venta);
+    item.stock_actual=nuevoActual;
+    ventasInv.unshift(venta);
+    cerrar(); renderInventario();
+  }catch(e){alert("Error: "+e.message);}
+  finally{loader(false);}
+}
+
+function excelInventario(){
+  const filas=[["Prenda","Talla","Stock Inicial","Vendidas","Disponible","Precio (L.)","Valor Stock (L.)","Fecha Ingreso"]];
+  inventario.forEach(i=>{
+    const vendidas=ventasInv.filter(v=>v.inv_id===i.id).reduce((s,v)=>s+v.cantidad,0);
+    filas.push([i.prenda,i.talla,i.stock_inicial,vendidas,i.stock_actual,i.precio||PRECIO_BASE,i.stock_actual*(i.precio||PRECIO_BASE),i.fecha_ingreso||""]);
+  });
+  csvDl(`Inventario_Shalom_${HOY_STR}.csv`,filas);
+}
+
+// ════════════════════════════════════════════
 // CERRAR
 // ════════════════════════════════════════════
 function cerrar(){
@@ -1553,5 +1824,62 @@ document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{
 // ════════════════════════════════════════════
 iniciarApp();
 </script>
+<!-- MODAL: INGRESAR STOCK -->
+<div class="overlay" id="modal-ingreso">
+ <div class="modal" style="max-width:420px;">
+  <div class="mhead"><h2>📦 Ingresar Stock</h2><button class="mclose" onclick="cerrar()">×</button></div>
+  <div class="mbody">
+   <div class="fg"><label>Prenda *</label>
+    <select id="ing-prenda">
+     <option value="">— Selecciona —</option>
+     <option>Buso</option><option>Camisa PE</option><option>Camisa Polo</option>
+    </select>
+   </div>
+   <div class="fg"><label>Talla *</label>
+    <select id="ing-talla">
+     <option value="">— Selecciona —</option>
+    </select>
+   </div>
+   <div class="fg"><label>Cantidad a ingresar *</label>
+    <input type="number" id="ing-cant" min="1" placeholder="Ej. 10">
+   </div>
+   <div class="fg"><label>Precio unitario (L.) *</label>
+    <input type="number" id="ing-precio" value="390" min="0">
+   </div>
+   <div class="fg"><label>Nota (opcional)</label>
+    <input type="text" id="ing-nota" placeholder="Ej. Compra proveedor junio 2025">
+   </div>
+   <div class="mfoot">
+    <button class="btn-can" onclick="cerrar()">Cancelar</button>
+    <button class="btn-ok" onclick="guardarIngreso()">📦 Ingresar</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- MODAL: VENDER UNIFORME -->
+<div class="overlay" id="modal-venta-inv">
+ <div class="modal" style="max-width:420px;">
+  <div class="mhead"><h2>🛍️ Registrar Venta</h2><button class="mclose" onclick="cerrar()">×</button></div>
+  <div class="mbody">
+   <div id="venta-inv-info" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:10px 12px;margin-bottom:11px;font-size:.82rem;"></div>
+   <div class="fg"><label>Cantidad *</label>
+    <input type="number" id="venta-cant" min="1" value="1" oninput="calcVentaInv()">
+   </div>
+   <div class="fg"><label>Alumno (opcional)</label>
+    <input type="text" id="venta-alumno" placeholder="Nombre del alumno">
+   </div>
+   <div class="tot-prev" style="margin-bottom:11px;">
+    <span id="venta-inv-desc">Total:</span>
+    <strong id="venta-inv-tot">L. 390.00</strong>
+   </div>
+   <div class="mfoot">
+    <button class="btn-can" onclick="cerrar()">Cancelar</button>
+    <button class="btn-ok" onclick="confirmarVentaInv()">✅ Confirmar Venta</button>
+   </div>
+  </div>
+ </div>
+</div>
+
 </body>
 </html>
