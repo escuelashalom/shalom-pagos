@@ -386,7 +386,7 @@ tbody tr:hover{background:#eff6ff;}
 <div id="panel-inventario" class="panel">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
     <h2 style="font-size:.95rem;font-weight:700;color:#1e293b;">👕 Inventario de Uniformes</h2>
-    <div style="display:flex;gap:7px;">
+    <div style="display:flex;gap:7px;" id="inv-admin-btns">
       <button class="btn-ok" style="flex:0;padding:8px 14px;" onclick="abrirIngreso()">+ Ingresar Stock</button>
       <button class="btn-xl" onclick="excelInventario()">⬇️ Excel</button>
     </div>
@@ -769,7 +769,7 @@ function configurarUI(){
   $("tab-alumnos").style.display=isAdmin?"block":"none";
   $("tab-cierre").style.display=isAdmin?"block":"none";
   $("tab-usuarios").style.display=isAdmin?"block":"none";
-  $("tab-inventario").style.display=isAdmin?"block":"none";
+  $("tab-inventario").style.display="block"; // visible para todos
   // Selects
   $("f-grad").innerHTML='<option value="">Todos los grados</option>'+GRADOS.map(g=>`<option>${g}</option>`).join("");
   $("f-mes").innerHTML='<option value="">Todos los meses</option>'+MESES.map(m=>`<option${m===MES_ACT?" selected":""}>${m}</option>`).join("");
@@ -820,7 +820,13 @@ async function correlativo(met){
   const mid=metNorm(met);
   const rows=await sbFetch("correlativos",{filtros:`metodo=eq.${mid}`});
   const n=(rows[0]?.valor||0)+1;
-  await sbPatch("correlativos",mid,{valor:n});
+  // Usar metodo como clave primaria (no id)
+  const res=await fetch(`${SB_URL}/rest/v1/correlativos?metodo=eq.${mid}&apikey=${SB_KEY}`,{
+    method:"PATCH",
+    headers:sbHeaders({"Prefer":"return=representation"}),
+    body:JSON.stringify({valor:n})
+  });
+  if(!res.ok)throw new Error(await res.text());
   const m=findMet(mid);
   return(m?.pre||"EF")+String(n).padStart(5,"0");
 }
@@ -1550,6 +1556,10 @@ async function cargarInventario(){
 function renderInventario(){
   const PRENDAS=["Buso","Camisa Polo Azul","Camisa Polo Blanca","Camisa PE Amarilla","Camisa PE Naranja"];
   const fP=$("inv-f-prenda").value, fT=$("inv-f-talla").value, fE=$("inv-f-estado").value;
+  const isAdmin=usuarioActual?.rol==="administrador";
+  // Mostrar/ocultar botones de admin
+  const adminBtns=$("inv-admin-btns");
+  if(adminBtns) adminBtns.style.display=isAdmin?"flex":"none";
 
   // Resumen tarjetas
   $("inv-resumen").innerHTML=PRENDAS.map(p=>{
@@ -1594,9 +1604,10 @@ function renderInventario(){
       <td style="padding:8px 12px;text-align:right;font-weight:700;color:#1e3a8a;">${fmt(i.stock_actual*(i.precio||PRECIO_BASE))}</td>
       <td style="padding:8px 12px;font-size:.72rem;color:#64748b;">${i.fecha_ingreso||"—"}</td>
       <td style="padding:8px 12px;text-align:center;">
-        ${i.stock_actual>0
+        ${isAdmin?(i.stock_actual>0
           ?`<button style="background:#f0fdf4;border:1px solid #86efac;color:#065f46;border-radius:6px;padding:3px 8px;font-size:.73rem;cursor:pointer;" onclick="abrirVentaInv('${i.id}')">🛍️ Vender</button>`
-          :`<span style="font-size:.7rem;color:#dc2626;font-weight:700;">Agotado</span>`}
+          :`<span style="font-size:.7rem;color:#dc2626;font-weight:700;">Agotado</span>`)
+        :`<span style="font-size:.7rem;color:${i.stock_actual>0?'#059669':'#dc2626'};font-weight:700;">${i.stock_actual>0?'Disponible':'Agotado'}</span>`}
       </td>
     </tr>`;
   }).join("");
