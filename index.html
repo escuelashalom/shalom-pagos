@@ -851,7 +851,10 @@ function renderPagos(){
   const grad=$("f-grad").value, mes=$("f-mes").value, tipo=$("f-tipo").value;
   const fil=pagos.filter(p=>{
     const ms=p.meses||[p.mes];
-    return(!grad||p.grado===grad)&&(!mes||ms.includes(mes))
+    const esMens=(p.tipo||"").includes("Mensualidad");
+    // El filtro de mes solo aplica a mensualidades; uniformes y otros siempre aparecen
+    return(!grad||p.grado===grad)
+      &&(!mes||!esMens||ms.includes(mes))
       &&(!bus||p.nombre.toLowerCase().includes(bus))
       &&(!tipo||(p.tipo||"").includes(tipo));
   });
@@ -1514,7 +1517,7 @@ function csvDl(nombre,filas){
 function excelAlumnos(){csvDl("Alumnos_Shalom.csv",[["ID","Nombre","Grado","Cuota (L.)"],...alumnos.map(a=>[a.id,a.nombre,a.grado,a.cuota||0])]);}
 function excelPagos(){
   const bus=$("f-bus").value.toLowerCase(),grad=$("f-grad").value,mes=$("f-mes").value,tipo=$("f-tipo").value;
-  const fil=pagos.filter(p=>{const ms=p.meses||[p.mes];return(!grad||p.grado===grad)&&(!mes||ms.includes(mes))&&(!bus||p.nombre.toLowerCase().includes(bus))&&(!tipo||(p.tipo||"").includes(tipo));});
+  const fil=pagos.filter(p=>{const ms=p.meses||[p.mes];const esMens=(p.tipo||"").includes("Mensualidad");return(!grad||p.grado===grad)&&(!mes||!esMens||ms.includes(mes))&&(!bus||p.nombre.toLowerCase().includes(bus))&&(!tipo||(p.tipo||"").includes(tipo));});
   const cab=["N° Recibo","Fecha","Hora","Alumno","Grado","Concepto(s)","Mes(es)","Total (L.)","Recargo (L.)","Método","Cobrado por","Nota","Anulado","Motivo Anulación"];
   csvDl("Pagos_Shalom.csv",[cab,...fil.map(p=>[p.numRecibo||"",p.fecha,p.hora,p.nombre,p.grado,p.tipo||"",(p.meses||[p.mes]).filter(Boolean).join(", "),p.total,p.recargo?150:0,findMet(p.metodo)?.lbl||"",p.usuarioNombre||"",p.nota||"",p.anulado?"Sí":"No",p.motivoAnulacion||""])]);
 }
