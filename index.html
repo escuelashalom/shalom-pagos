@@ -1557,11 +1557,10 @@ function renderInventario(){
   const PRENDAS=["Buso","Camisa Polo Azul","Camisa Polo Blanca","Camisa PE Amarilla","Camisa PE Naranja"];
   const fP=$("inv-f-prenda").value, fT=$("inv-f-talla").value, fE=$("inv-f-estado").value;
   const isAdmin=usuarioActual?.rol==="administrador";
-  // Mostrar/ocultar botones de admin
   const adminBtns=$("inv-admin-btns");
   if(adminBtns) adminBtns.style.display=isAdmin?"flex":"none";
 
-  // Resumen tarjetas
+  // Resumen tarjetas — Dirección solo ve cantidades, Admin ve todo
   $("inv-resumen").innerHTML=PRENDAS.map(p=>{
     const its=inventario.filter(i=>i.prenda===p);
     const disp=its.reduce((s,i)=>s+i.stock_actual,0);
@@ -1572,7 +1571,7 @@ function renderInventario(){
       <div style="display:flex;gap:14px;margin-top:8px;">
         <div style="text-align:center;"><div style="font-size:1.4rem;font-weight:800;${cls}">${disp}</div><div style="font-size:.66rem;color:#64748b;">Disponible</div></div>
         <div style="text-align:center;"><div style="font-size:1.4rem;font-weight:800;color:#7c3aed;">${vend}</div><div style="font-size:.66rem;color:#64748b;">Vendidas</div></div>
-        <div style="text-align:center;"><div style="font-size:1rem;font-weight:800;color:#1e3a8a;">${fmt(disp*PRECIO_BASE)}</div><div style="font-size:.66rem;color:#64748b;">Valor stock</div></div>
+        ${isAdmin?`<div style="text-align:center;"><div style="font-size:1rem;font-weight:800;color:#1e3a8a;">${fmt(disp*PRECIO_BASE)}</div><div style="font-size:.66rem;color:#64748b;">Valor stock</div></div>`:""}
       </div>
     </div>`;
   }).join("");
@@ -1590,29 +1589,66 @@ function renderInventario(){
 
   const tb=$("inv-tbody");
   if(!fil.length){tb.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:30px;color:#94a3b8;">Sin registros.</td></tr>`;return;}
+
+  // Cabecera de tabla según rol
+  const thAdmin=isAdmin
+    ?`<th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Stock inicial</th>
+      <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Vendidas</th>
+      <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Disponible</th>
+      <th style="padding:9px 12px;text-align:right;color:#fff;font-size:.76rem;">Precio</th>
+      <th style="padding:9px 12px;text-align:right;color:#fff;font-size:.76rem;">Valor stock</th>
+      <th style="padding:9px 12px;text-align:left;color:#fff;font-size:.76rem;">Último ingreso</th>
+      <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Acción</th>`
+    :`<th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Disponible</th>
+      <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Vendidas</th>
+      <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Estado</th>`;
+
+  // Filas según rol
   tb.innerHTML=fil.map((i,idx)=>{
     const vend=ventasInv.filter(v=>v.inv_id===i.id).reduce((s,v)=>s+v.cantidad,0);
-    const cls=i.stock_actual===0?"color:#dc2626;":i.stock_actual<=3?"color:#f59e0b;":"color:#059669;";
+    const cls=i.stock_actual===0?"color:#dc2626;font-weight:700":i.stock_actual<=3?"color:#f59e0b;font-weight:700":"color:#059669;font-weight:700";
     const bg=idx%2===0?"":"background:#f8faff;";
+    const tdAdmin=isAdmin
+      ?`<td style="padding:8px 12px;text-align:center;color:#64748b;">${i.stock_inicial}</td>
+        <td style="padding:8px 12px;text-align:center;color:#7c3aed;">${vend}</td>
+        <td style="padding:8px 12px;text-align:center;${cls}">${i.stock_actual}</td>
+        <td style="padding:8px 12px;text-align:right;">${fmt(i.precio||PRECIO_BASE)}</td>
+        <td style="padding:8px 12px;text-align:right;font-weight:700;color:#1e3a8a;">${fmt(i.stock_actual*(i.precio||PRECIO_BASE))}</td>
+        <td style="padding:8px 12px;font-size:.72rem;color:#64748b;">${i.fecha_ingreso||"—"}</td>
+        <td style="padding:8px 12px;text-align:center;">
+          ${i.stock_actual>0
+            ?`<button style="background:#f0fdf4;border:1px solid #86efac;color:#065f46;border-radius:6px;padding:3px 8px;font-size:.73rem;cursor:pointer;" onclick="abrirVentaInv('${i.id}')">🛍️ Vender</button>`
+            :`<span style="font-size:.7rem;color:#dc2626;font-weight:700;">Agotado</span>`}
+        </td>`
+      :`<td style="padding:8px 12px;text-align:center;font-size:1.1rem;font-weight:800;${cls}">${i.stock_actual}</td>
+        <td style="padding:8px 12px;text-align:center;color:#7c3aed;">${vend}</td>
+        <td style="padding:8px 12px;text-align:center;">
+          <span style="background:${i.stock_actual===0?'#fef2f2':i.stock_actual<=3?'#fffbeb':'#f0fdf4'};color:${i.stock_actual===0?'#dc2626':i.stock_actual<=3?'#f59e0b':'#059669'};border-radius:20px;padding:2px 10px;font-size:.74rem;font-weight:700;">
+            ${i.stock_actual===0?"Agotado":i.stock_actual<=3?"Pocas unidades":"Disponible"}
+          </span>
+        </td>`;
     return`<tr style="${bg}">
       <td style="padding:8px 12px;font-weight:700;">${i.prenda}</td>
       <td style="padding:8px 12px;text-align:center;"><span style="background:#dbeafe;color:#1e40af;border-radius:5px;padding:2px 8px;font-size:.76rem;font-weight:700;">${i.talla}</span></td>
-      <td style="padding:8px 12px;text-align:center;color:#64748b;">${i.stock_inicial}</td>
-      <td style="padding:8px 12px;text-align:center;color:#7c3aed;">${vend}</td>
-      <td style="padding:8px 12px;text-align:center;font-weight:700;${cls}">${i.stock_actual}</td>
-      <td style="padding:8px 12px;text-align:right;">${fmt(i.precio||PRECIO_BASE)}</td>
-      <td style="padding:8px 12px;text-align:right;font-weight:700;color:#1e3a8a;">${fmt(i.stock_actual*(i.precio||PRECIO_BASE))}</td>
-      <td style="padding:8px 12px;font-size:.72rem;color:#64748b;">${i.fecha_ingreso||"—"}</td>
-      <td style="padding:8px 12px;text-align:center;">
-        ${isAdmin?(i.stock_actual>0
-          ?`<button style="background:#f0fdf4;border:1px solid #86efac;color:#065f46;border-radius:6px;padding:3px 8px;font-size:.73rem;cursor:pointer;" onclick="abrirVentaInv('${i.id}')">🛍️ Vender</button>`
-          :`<span style="font-size:.7rem;color:#dc2626;font-weight:700;">Agotado</span>`)
-        :`<span style="font-size:.7rem;color:${i.stock_actual>0?'#059669':'#dc2626'};font-weight:700;">${i.stock_actual>0?'Disponible':'Agotado'}</span>`}
-      </td>
+      ${tdAdmin}
     </tr>`;
   }).join("");
 
+  // Actualizar encabezado tabla
+  const thead=tb.closest("table")?.querySelector("thead tr");
+  if(thead) thead.innerHTML=`
+    <th style="padding:9px 12px;text-align:left;color:#fff;font-size:.76rem;">Prenda</th>
+    <th style="padding:9px 12px;text-align:center;color:#fff;font-size:.76rem;">Talla</th>
+    ${thAdmin}`;
+
+  // Historial ventas — solo admin
   const vtb=$("inv-ventas-tbody");
+  const histTit=document.querySelector("#panel-inventario h3");
+  if(histTit) histTit.style.display=isAdmin?"block":"none";
+  const histTable=vtb?.closest("div");
+  if(histTable) histTable.style.display=isAdmin?"block":"none";
+
+  if(!isAdmin)return;
   if(!ventasInv.length){vtb.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8;">Sin ventas.</td></tr>`;return;}
   vtb.innerHTML=ventasInv.slice(0,50).map((v,idx)=>{
     const bg=idx%2===0?"":"background:#f8faff;";
