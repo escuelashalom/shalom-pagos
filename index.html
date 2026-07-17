@@ -265,7 +265,7 @@ tbody tr:hover{background:#eff6ff;}
 </div>
 
 <!-- ══ CONFIGURACIÓN INICIAL ══ -->
-<div id="cfg-screen">
+<div id="cfg-screen" style="display:none;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%);padding:20px;">
   <div class="cfg-box">
     <h2>⚙️ Configuración inicial</h2>
     <p>La primera vez que abras el sistema en una computadora nueva, debes ingresar tus credenciales de Supabase. Solo se hace una vez — quedan guardadas.</p>
@@ -285,7 +285,7 @@ tbody tr:hover{background:#eff6ff;}
 </div>
 
 <!-- ══ LOGIN ══ -->
-<div id="login-screen">
+<div id="login-screen" style="display:none;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%);padding:20px;">
   <div class="login-box">
     <div class="login-logo">🏫</div>
     <h1>Escuela Bilingüe Shalom</h1>
@@ -755,9 +755,20 @@ function loader(show,txt="Cargando…"){$("loader").classList.toggle("show",show
 // INIT
 // ════════════════════════════════════════════
 function iniciarApp(){
-  if(!cargarConfig()){$("cfg-screen").style.display="flex";return;}
+  if(window.location.search.includes("reset=1")){
+    localStorage.removeItem("sb_url");localStorage.removeItem("sb_key");
+    window.history.replaceState({},"",window.location.pathname);
+  }
+  const FLEX_BG="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%);padding:20px;";
+  if(!cargarConfig()){
+    $("cfg-screen").style.cssText=FLEX_BG;
+    $("login-screen").style.display="none";
+    $("app").style.display="none";
+    return;
+  }
   $("cfg-screen").style.display="none";
-  $("login-screen").style.display="flex";
+  $("login-screen").style.cssText=FLEX_BG;
+  $("app").style.display="none";
 }
 
 // ════════════════════════════════════════════
@@ -1822,7 +1833,9 @@ document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{
 // ════════════════════════════════════════════
 // ARRANCAR
 // ════════════════════════════════════════════
-iniciarApp();
+document.addEventListener("DOMContentLoaded", function(){
+  iniciarApp();
+});
 </script>
 <!-- MODAL: INGRESAR STOCK -->
 <div class="overlay" id="modal-ingreso">
