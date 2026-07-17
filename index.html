@@ -583,18 +583,12 @@ function mostrarCfgError(msg){$("cfg-error").textContent=msg;$("cfg-error").styl
 // FETCH HELPER
 // ════════════════════════════════════════════
 function sbHeaders(extra={}){
-  // Nuevo formato: sb_publishable_xxx → solo Authorization
-  // Formato clásico: eyJxxx → apikey + Authorization
-  const isNew=SB_KEY.startsWith("sb_publishable_")||SB_KEY.startsWith("sb_secret_");
-  const base=isNew
-    ?{"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"}
-    :{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"};
-  return {...base,...extra};
+  return{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json",...extra};
 }
 
 async function sbFetch(tabla, opts={}){
   const {filtros="",method="GET",body=null,select="*",upsert=false}=opts;
-  let url=`${SB_URL}/rest/v1/${tabla}?select=${select}${filtros?'&'+filtros:''}`;
+  let url=`${SB_URL}/rest/v1/${tabla}?select=${select}&apikey=${SB_KEY}${filtros?'&'+filtros:''}`;
   if(upsert) url+=`&on_conflict=id`;
   const prefer=upsert?"resolution=merge-duplicates":"return=representation";
   const res=await fetch(url,{method,headers:sbHeaders({"Prefer":prefer}),body:body?JSON.stringify(body):null});
@@ -604,7 +598,7 @@ async function sbFetch(tabla, opts={}){
 }
 
 async function sbPost(tabla,data){
-  const res=await fetch(`${SB_URL}/rest/v1/${tabla}`,{
+  const res=await fetch(`${SB_URL}/rest/v1/${tabla}?apikey=${SB_KEY}`,{
     method:"POST",
     headers:sbHeaders({"Prefer":"return=representation"}),
     body:JSON.stringify(data)
@@ -614,7 +608,7 @@ async function sbPost(tabla,data){
 }
 
 async function sbPatch(tabla,id,data){
-  const res=await fetch(`${SB_URL}/rest/v1/${tabla}?id=eq.${id}`,{
+  const res=await fetch(`${SB_URL}/rest/v1/${tabla}?id=eq.${id}&apikey=${SB_KEY}`,{
     method:"PATCH",
     headers:sbHeaders({"Prefer":"return=representation"}),
     body:JSON.stringify(data)
@@ -679,13 +673,16 @@ async function login(){
   $("l-err").style.display="none"; $("l-load").style.display="block";
   try{
     const rows=await sbFetch("usuarios",{filtros:`usuario=eq.${encodeURIComponent(usr)}&password=eq.${encodeURIComponent(pwd)}&activo=eq.true`});
-    if(!rows.length){$("l-err").textContent="Usuario o contraseña incorrectos.";$("l-err").style.display="block";return;}
+    if(!rows.length){$("l-err").textContent="❌ Usuario o contraseña incorrectos.";$("l-err").style.display="block";return;}
     usuarioActual=rows[0];
     $("login-screen").style.display="none";
     $("app").style.display="block";
     configurarUI();
     await cargarDatos();
-  }catch(e){$("l-err").textContent="Error de conexión. Verifica tu configuración.";$("l-err").style.display="block";}
+  }catch(e){
+    $("l-err").textContent="❌ "+e.message;
+    $("l-err").style.display="block";
+  }
   finally{$("l-load").style.display="none";}
 }
 
