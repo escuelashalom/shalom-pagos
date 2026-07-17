@@ -329,7 +329,7 @@ tbody tr:hover{background:#eff6ff;}
     <select id="f-tipo" onchange="renderPagos()">
       <option value="">Todos los conceptos</option>
       <option>Mensualidad</option><option>Matrícula</option><option>Libros</option>
-      <option>Clases Extracurriculares</option><option>Camisa Polo</option><option>Camisa PE</option><option>Buso</option>
+      <option>Clases Extracurriculares</option><option>Camisa Polo Azul</option><option>Camisa Polo Blanca</option><option>Camisa PE Amarilla</option><option>Camisa PE Naranja</option><option>Buso</option>
     </select>
     <button class="btn-xl" onclick="excelPagos()">⬇️ Excel</button>
   </div>
@@ -395,7 +395,7 @@ tbody tr:hover{background:#eff6ff;}
   <div style="background:#fff;border-radius:11px;padding:11px;box-shadow:0 1px 3px rgba(0,0,0,.07);display:flex;flex-wrap:wrap;gap:8px;margin-bottom:13px;align-items:center;">
     <select id="inv-f-prenda" onchange="renderInventario()" style="border:1px solid #e2e8f0;border-radius:7px;padding:7px 9px;font-size:.8rem;outline:none;flex:1;min-width:140px;">
       <option value="">Todas las prendas</option>
-      <option>Buso</option><option>Camisa PE</option><option>Camisa Polo</option>
+      <option>Buso</option><option>Camisa Polo Azul</option><option>Camisa Polo Blanca</option><option>Camisa PE Amarilla</option><option>Camisa PE Naranja</option>
     </select>
     <select id="inv-f-talla" onchange="renderInventario()" style="border:1px solid #e2e8f0;border-radius:7px;padding:7px 9px;font-size:.8rem;outline:none;flex:1;min-width:120px;">
       <option value="">Todas las tallas</option>
@@ -460,8 +460,10 @@ tbody tr:hover{background:#eff6ff;}
       <label class="copt"><input type="checkbox" value="Matrícula" onchange="cddCambio(this)">🎓 Matrícula</label>
       <label class="copt"><input type="checkbox" value="Libros" onchange="cddCambio(this)">📚 Libros</label>
       <label class="copt"><input type="checkbox" value="Clases Extracurriculares" onchange="cddCambio(this)">🎨 Clases Extracurriculares</label>
-      <label class="copt"><input type="checkbox" value="Camisa Polo" onchange="cddCambio(this)">👕 Camisa Polo</label>
-      <label class="copt"><input type="checkbox" value="Camisa PE" onchange="cddCambio(this)">👟 Camisa PE</label>
+      <label class="copt"><input type="checkbox" value="Camisa Polo Azul" onchange="cddCambio(this)">👕 Camisa Polo Azul</label>
+      <label class="copt"><input type="checkbox" value="Camisa Polo Blanca" onchange="cddCambio(this)">👕 Camisa Polo Blanca</label>
+      <label class="copt"><input type="checkbox" value="Camisa PE Amarilla" onchange="cddCambio(this)">👟 Camisa PE Amarilla</label>
+      <label class="copt"><input type="checkbox" value="Camisa PE Naranja" onchange="cddCambio(this)">👟 Camisa PE Naranja</label>
       <label class="copt"><input type="checkbox" value="Buso" onchange="cddCambio(this)">🧥 Buso</label>
       <div class="csep"></div>
       <label class="copt"><input type="checkbox" value="__otro__" onchange="cddCambio(this)">✏️ Otro (especificar)</label>
@@ -681,9 +683,9 @@ async function sbPatch(tabla,id,data){
 const GRADOS=["K4","K5","1° Primaria","2° Primaria","3° Primaria","4° Primaria","5° Primaria","6° Primaria","1° Secundaria","2° Secundaria","3° Secundaria"];
 const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const METODOS=[{id:"ef",lbl:"Efectivo",icon:"💵",pre:"EF"},{id:"ta",lbl:"Tarjeta",icon:"💳",pre:"TC"},{id:"tr",lbl:"Transferencia",icon:"🏦",pre:"TX"}];
-const ICONOS={"Mensualidad":"📅","Matrícula":"🎓","Libros":"📚","Clases Extracurriculares":"🎨","Camisa Polo":"👕","Camisa PE":"👟","Buso":"🧥"};
-const CCOLORS={"Mensualidad":"background:#dbeafe;color:#1e40af","Matrícula":"background:#fce7f3;color:#9d174d","Libros":"background:#d1fae5;color:#065f46","Clases Extracurriculares":"background:#fef3c7;color:#92400e","Camisa Polo":"background:#ede9fe;color:#5b21b6","Camisa PE":"background:#ede9fe;color:#5b21b6","Buso":"background:#ede9fe;color:#5b21b6"};
-const ORDEN_C=["Mensualidad","Matrícula","Libros","Clases Extracurriculares","Camisa Polo","Camisa PE","Buso"];
+const ICONOS={"Mensualidad":"📅","Matrícula":"🎓","Libros":"📚","Clases Extracurriculares":"🎨","Camisa Polo Azul":"👕","Camisa Polo Blanca":"👕","Camisa PE Amarilla":"👟","Camisa PE Naranja":"👟","Buso":"🧥"};
+const CCOLORS={"Mensualidad":"background:#dbeafe;color:#1e40af","Matrícula":"background:#fce7f3;color:#9d174d","Libros":"background:#d1fae5;color:#065f46","Clases Extracurriculares":"background:#fef3c7;color:#92400e","Camisa Polo Azul":"background:#ede9fe;color:#5b21b6","Camisa Polo Blanca":"background:#ede9fe;color:#5b21b6","Camisa PE Amarilla":"background:#fef3c7;color:#92400e","Camisa PE Naranja":"background:#fed7aa;color:#c2410c","Buso":"background:#ede9fe;color:#5b21b6"};
+const ORDEN_C=["Mensualidad","Matrícula","Libros","Clases Extracurriculares","Camisa Polo Azul","Camisa Polo Blanca","Camisa PE Amarilla","Camisa PE Naranja","Buso"];
 const RECARGO=150;
 const HOY=new Date(), HOY_STR=HOY.toISOString().slice(0,10), MES_ACT=MESES[HOY.getMonth()];
 
@@ -1472,7 +1474,7 @@ async function cargarInventario(){
 }
 
 function renderInventario(){
-  const PRENDAS=["Buso","Camisa PE","Camisa Polo"];
+  const PRENDAS=["Buso","Camisa Polo Azul","Camisa Polo Blanca","Camisa PE Amarilla","Camisa PE Naranja"];
   const fP=$("inv-f-prenda").value, fT=$("inv-f-talla").value, fE=$("inv-f-estado").value;
 
   // Resumen tarjetas
@@ -1647,7 +1649,7 @@ iniciarApp();
   <div class="mhead"><h2>📦 Ingresar Stock</h2><button class="mclose" onclick="cerrar()">×</button></div>
   <div class="mbody">
    <div class="fg"><label>Prenda *</label>
-    <select id="ing-prenda"><option value="">— Selecciona —</option><option>Buso</option><option>Camisa PE</option><option>Camisa Polo</option></select>
+    <select id="ing-prenda"><option value="">— Selecciona —</option><option>Buso</option><option>Camisa Polo Azul</option><option>Camisa Polo Blanca</option><option>Camisa PE Amarilla</option><option>Camisa PE Naranja</option></select>
    </div>
    <div class="fg"><label>Talla *</label><select id="ing-talla"><option value="">— Selecciona —</option></select></div>
    <div class="fg"><label>Cantidad *</label><input type="number" id="ing-cant" min="1" placeholder="Ej. 10"></div>
