@@ -1436,26 +1436,56 @@ function mostrarRecibo(p,esReimpr=false){
 function verRecibo(id){const p=pagos.find(x=>x.id===id);if(p)mostrarRecibo(p,true);}
 function imprimirRecibo(){
   const contenido=$("rec-html").innerHTML;
-  const wrapper=$("print-wrapper");
-  // Construir 2 copias: original (padre) + copia (escuela)
-  wrapper.innerHTML=`
-    <div class="print-recibo">
-      <span class="print-label">📋 Original — Padre / Tutor</span>
-      ${contenido}
-    </div>
-    <hr class="print-divider">
-    <div class="print-recibo">
-      <span class="print-label">📋 Copia — Escuela Bilingüe Shalom</span>
-      ${contenido.replace('rec-num"','rec-num" ').replace(/<\/div>\s*$/, '<div style="text-align:center;font-size:8px;color:#94a3b8;margin-top:4px;">COPIA</div></div>')}
-    </div>`;
-  wrapper.style.display="block";
-  // Ocultar todo lo demás
-  document.querySelectorAll("header,.tabs,main,.overlay").forEach(el=>{el.dataset.prevDisplay=el.style.display;el.style.display="none";});
-  window.print();
-  // Restaurar
-  document.querySelectorAll("header,.tabs,main,.overlay").forEach(el=>{el.style.display=el.dataset.prevDisplay||"";});
-  wrapper.style.display="none";
-  wrapper.innerHTML="";
+  // Crear ventana de impresión con 2 recibos
+  const ventana=window.open("","_blank","width=800,height=600");
+  ventana.document.write(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<title>Recibo de Pago</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;font-size:12px;background:#fff;padding:0;}
+.pagina{width:100%;padding:10px 15px;}
+.etiqueta{text-align:center;font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:700;}
+.corte{border:none;border-top:2px dashed #cbd5e1;margin:6px 0;position:relative;}
+.corte-txt{position:absolute;left:50%;top:-8px;transform:translateX(-50%);background:#fff;padding:0 8px;font-size:9px;color:#94a3b8;white-space:nowrap;}
+/* Estilos del recibo */
+.recibo{background:#fff;padding:10px 14px;font-size:11px;line-height:1.5;}
+.rec-hdr{text-align:center;margin-bottom:10px;border-bottom:2px dashed #cbd5e1;padding-bottom:8px;}
+.rec-hdr h2{font-size:13px;font-weight:800;color:#1e3a8a;}
+.rec-hdr div{font-size:10px;color:#475569;margin:2px 0;}
+.rec-num{background:#1e3a8a;color:#fff;border-radius:4px;display:inline-block;padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:.05em;}
+.rec-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted #e2e8f0;}
+.rec-row .l{color:#475569;}.rec-row .v{font-weight:700;text-align:right;}
+.rec-det{background:#f8faff;border-radius:5px;padding:6px 8px;margin:7px 0;border-left:3px solid #3b82f6;}
+.rec-det-tit{font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+.rec-tot{background:#1e3a8a;color:#fff;border-radius:6px;padding:8px 11px;display:flex;justify-content:space-between;align-items:center;margin:8px 0;}
+.rec-tot .tl{font-size:11px;font-weight:600;}.rec-tot .tv{font-size:15px;font-weight:800;}
+.rec-firma{border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;font-size:9px;color:#94a3b8;}
+.rec-firma div{text-align:center;}
+.linea{border-top:1px solid #cbd5e1;margin-bottom:2px;margin-top:16px;width:90px;}
+.badge{display:inline-flex;align-items:center;gap:2px;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
+.b-ef{background:#d1fae5;color:#065f46;}.b-ta{background:#dbeafe;color:#1e40af;}.b-tr{background:#ede9fe;color:#5b21b6;}
+.copia-badge{background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;border:1px solid #fde68a;}
+@media print{
+  body{margin:0;padding:0;}
+  @page{margin:8mm 10mm;size:letter portrait;}
+}
+</style>
+</head>
+<body>
+<div class="pagina">
+  <div class="etiqueta">📋 Original — Padre / Tutor</div>
+  <div class="recibo">${contenido}</div>
+</div>
+<hr class="corte"><span class="corte-txt">✂ &nbsp;Cortar aquí&nbsp; ✂</span>
+<div class="pagina" style="margin-top:6px;">
+  <div class="etiqueta">📋 Copia — Escuela Bilingüe Shalom</div>
+  <div class="recibo">${contenido}</div>
+</div>
+</body></html>`);
+  ventana.document.close();
+  ventana.focus();
+  setTimeout(()=>{ventana.print();ventana.close();},600);
 }
 
 // ════════════════════════════════════════════
