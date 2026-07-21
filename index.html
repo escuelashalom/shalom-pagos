@@ -241,9 +241,52 @@ tbody tr:hover{background:#eff6ff;}
   .c-filtros,.pend-box,.abtns,.panel:not(#panel-cierre),
   .overlay:not(#modal-recibo){display:none!important;}
   #modal-recibo{display:block!important;position:static!important;background:none!important;padding:0!important;}
-  #modal-recibo .modal{box-shadow:none!important;max-width:100%!important;}
+  #modal-recibo .modal{box-shadow:none!important;max-width:100%!important;border:none!important;}
   #modal-recibo .rec-btns,.mhead{display:none!important;}
-  body{background:#fff;}
+  body{background:#fff;margin:0;padding:0;}
+  /* Contenedor de impresión con 2 recibos */
+  #print-wrapper{
+    display:block!important;
+    width:100%;
+    page-break-inside:avoid;
+  }
+  .print-recibo{
+    width:100%;
+    padding:8px 12px;
+    box-sizing:border-box;
+    page-break-inside:avoid;
+  }
+  .print-divider{
+    border:none;
+    border-top:2px dashed #94a3b8;
+    margin:8px 0;
+    display:block!important;
+    position:relative;
+  }
+  .print-divider::after{
+    content:"✂ Cortar aquí";
+    position:absolute;
+    left:50%;
+    top:-9px;
+    transform:translateX(-50%);
+    background:#fff;
+    padding:0 8px;
+    font-size:9px;
+    color:#94a3b8;
+    font-family:Arial,sans-serif;
+  }
+  .print-label{
+    text-align:center;
+    font-size:8px;
+    color:#94a3b8;
+    font-family:Arial,sans-serif;
+    margin-bottom:3px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    display:block!important;
+  }
+  /* Ocultar el modal normal y mostrar el wrapper de impresión */
+  #rec-html{display:none!important;}
 }
 @media(max-width:600px){.frow{grid-template-columns:1fr;}.mg{grid-template-columns:repeat(3,1fr);}.mc-grid{grid-template-columns:1fr;}}
 
@@ -252,7 +295,8 @@ tbody tr:hover{background:#eff6ff;}
 <body>
 
 
-<!-- ══ LOADER ══ -->
+<!-- Wrapper de impresión: 2 recibos por página -->
+<div id="print-wrapper" style="display:none;position:fixed;top:0;left:0;width:100%;background:#fff;z-index:9999;"></div>
 <div class="loader-overlay" id="loader">
   <div class="spinner"></div>
   <div class="loader-txt" id="loader-txt">Cargando…</div>
@@ -1391,9 +1435,27 @@ function mostrarRecibo(p,esReimpr=false){
 }
 function verRecibo(id){const p=pagos.find(x=>x.id===id);if(p)mostrarRecibo(p,true);}
 function imprimirRecibo(){
-  document.querySelectorAll("header,.tabs,main").forEach(el=>el.style.display="none");
+  const contenido=$("rec-html").innerHTML;
+  const wrapper=$("print-wrapper");
+  // Construir 2 copias: original (padre) + copia (escuela)
+  wrapper.innerHTML=`
+    <div class="print-recibo">
+      <span class="print-label">📋 Original — Padre / Tutor</span>
+      ${contenido}
+    </div>
+    <hr class="print-divider">
+    <div class="print-recibo">
+      <span class="print-label">📋 Copia — Escuela Bilingüe Shalom</span>
+      ${contenido.replace('rec-num"','rec-num" ').replace(/<\/div>\s*$/, '<div style="text-align:center;font-size:8px;color:#94a3b8;margin-top:4px;">COPIA</div></div>')}
+    </div>`;
+  wrapper.style.display="block";
+  // Ocultar todo lo demás
+  document.querySelectorAll("header,.tabs,main,.overlay").forEach(el=>{el.dataset.prevDisplay=el.style.display;el.style.display="none";});
   window.print();
-  document.querySelectorAll("header,.tabs,main").forEach(el=>el.style.display="");
+  // Restaurar
+  document.querySelectorAll("header,.tabs,main,.overlay").forEach(el=>{el.style.display=el.dataset.prevDisplay||"";});
+  wrapper.style.display="none";
+  wrapper.innerHTML="";
 }
 
 // ════════════════════════════════════════════
