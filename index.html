@@ -357,6 +357,7 @@ tbody tr:hover{background:#eff6ff;}
     <button class="tab active" onclick="irTab('pagos',this)">💰 Pagos</button>
     <button class="tab" id="tab-cierre" onclick="irTab('cierre',this)">📊 Cierre</button>
     <button class="tab" id="tab-alumnos" onclick="irTab('alumnos',this)">👩‍🎓 Alumnos</button>
+    <button class="tab" id="tab-contrato" onclick="irTab('contrato',this)">📄 Contrato</button>
     <button class="tab" id="tab-inventario" onclick="irTab('inventario',this)">👕 Inventario</button>
     <button class="tab" id="tab-usuarios" onclick="irTab('usuarios',this)">👥 Usuarios</button>
   </div>
@@ -424,6 +425,27 @@ tbody tr:hover{background:#eff6ff;}
     <button class="btn-ok" style="flex:0;padding:8px 14px;" onclick="abrirUsuario()">+ Nuevo Usuario</button>
   </div>
   <div class="u-grid" id="u-grid"></div>
+</div>
+
+<!-- CONTRATO -->
+<div id="panel-contrato" class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <h2 style="font-size:.95rem;font-weight:700;color:#1e293b;">📄 Contrato de Matrícula</h2>
+  </div>
+  <div style="background:#fff;border-radius:11px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:13px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+    <div style="flex:1;min-width:200px;">
+      <label style="display:block;font-size:.74rem;font-weight:700;color:#334155;margin-bottom:4px;">Buscar alumno</label>
+      <input type="text" id="ct-bus" placeholder="Escribe nombre del alumno…" oninput="filtrarContrato()"
+        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 11px;font-size:.84rem;outline:none;">
+    </div>
+    <div style="flex:1;min-width:150px;">
+      <label style="display:block;font-size:.74rem;font-weight:700;color:#334155;margin-bottom:4px;">Grado</label>
+      <select id="ct-grad" onchange="filtrarContrato()" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 11px;font-size:.82rem;outline:none;">
+        <option value="">Todos los grados</option>
+      </select>
+    </div>
+  </div>
+  <div id="ct-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:9px;"></div>
 </div>
 
 <!-- INVENTARIO -->
@@ -578,11 +600,19 @@ tbody tr:hover{background:#eff6ff;}
   <div class="mhead"><h2 id="a-tit">Agregar Alumno</h2><button class="mclose" onclick="cerrar()">×</button></div>
   <div class="mbody">
    <input type="hidden" id="a-id">
-   <div class="fg"><label>Nombre completo *</label><input type="text" id="a-nom" placeholder="Nombre y apellido" oninput="valAlumno()"></div>
+   <div class="fg"><label>Nombre completo *</label><input type="text" id="a-nom" placeholder="Nombre y apellido del alumno" oninput="valAlumno()"></div>
    <div class="frow">
     <div class="fg"><label>Grado *</label><select id="a-grad"></select></div>
     <div class="fg"><label>Cuota mensual (L.) *</label><input type="number" id="a-cuota" placeholder="0.00" oninput="valAlumno()"></div>
    </div>
+   <hr style="border:none;border-top:1px solid #f1f5f9;margin:8px 0;">
+   <div style="font-size:.76rem;font-weight:700;color:#1e3a8a;margin-bottom:8px;">👨‍👩‍👧 Datos del Padre / Tutor</div>
+   <div class="fg"><label>Nombre del padre/tutor *</label><input type="text" id="a-padre" placeholder="Nombre completo del padre o tutor" oninput="valAlumno()"></div>
+   <div class="frow">
+    <div class="fg"><label>N° de Identidad</label><input type="text" id="a-identidad" placeholder="0000-0000-00000"></div>
+    <div class="fg"><label>Teléfono / Celular</label><input type="text" id="a-telefono" placeholder="0000-0000"></div>
+   </div>
+   <div class="fg"><label>Dirección</label><input type="text" id="a-direccion" placeholder="Colonia, calle, ciudad"></div>
    <div class="mfoot">
     <button class="btn-can" onclick="cerrar()">Cancelar</button>
     <button class="btn-ok" id="a-btn" onclick="guardarAlumno()" disabled>Guardar</button>
@@ -812,6 +842,7 @@ function configurarUI(){
   $("tab-alumnos").style.display=esAdmin?"block":"none";
   $("tab-cierre").style.display="block";
   $("tab-usuarios").style.display=esAdmin?"block":"none";
+  $("tab-contrato").style.display=esAdmin?"block":"none";
   $("tab-inventario").style.display="block";
   $("f-grad").innerHTML='<option value="">Todos los grados</option>'+GRADOS.map(g=>`<option>${g}</option>`).join("");
   $("f-mes").innerHTML='<option value="">Todos los meses</option>'+MESES.map(m=>`<option${m===MES_ACT?" selected":""}>${m}</option>`).join("");
@@ -884,6 +915,7 @@ function irTab(id,btn){
   if(id==="alumnos")renderAlumnos();
   if(id==="cierre")renderCierre();
   if(id==="usuarios")renderUsuarios();
+  if(id==="contrato")renderContrato();
   if(id==="inventario"){cargarInventario().then(()=>renderInventario());}
 }
 
@@ -1032,9 +1064,10 @@ function renderAlumnos(){
     const l=alumnos.filter(a=>a.grado===g);if(!l.length)return"";
     return`<div class="gcard"><h3>${g} <span class="gbadge">${l.length}</span></h3>
       ${l.map(a=>`<div class="arow">
-        <div class="ainfo"><div class="anom">${a.nombre}</div><div class="acuota">Cuota: ${a.cuota?fmt(a.cuota):"—"}</div></div>
+        <div class="ainfo"><div class="anom">${a.nombre}</div><div class="acuota">Cuota: ${a.cuota?fmt(a.cuota):"—"}${a.padre?` · 👨 ${a.padre}`:""}</div></div>
         <div class="abtns">
-          <button class="abtn ap" onclick="abrirPago('${a.id}')">Pago</button>
+          <button class="abtn ap" onclick="abrirPago('${a.id}')">💰 Pago</button>
+          <button class="abtn" style="color:#7c3aed;border-color:#ddd6fe;" onclick="verContrato('${a.id}')">📄 Contrato</button>
           <button class="abtn ae" onclick="editarAlumno('${a.id}')">✏️</button>
           <button class="abtn ad" onclick="confElim('${a.id}')">🗑️</button>
         </div>
@@ -1480,25 +1513,45 @@ function imprimirRecibo(){
 // ════════════════════════════════════════════
 // ALUMNOS CRUD
 // ════════════════════════════════════════════
-function abrirAlumno(){$("a-id").value="";$("a-nom").value="";$("a-cuota").value="";$("a-grad").value=GRADOS[0];$("a-tit").textContent="Agregar Alumno";$("a-btn").textContent="Agregar";valAlumno();$("modal-alumno").classList.add("open");setTimeout(()=>$("a-nom").focus(),100);}
-function editarAlumno(id){const a=alumnos.find(x=>x.id===id);if(!a)return;$("a-id").value=a.id;$("a-nom").value=a.nombre;$("a-grad").value=a.grado;$("a-cuota").value=a.cuota||"";$("a-tit").textContent="Editar Alumno";$("a-btn").textContent="Guardar cambios";valAlumno();$("modal-alumno").classList.add("open");setTimeout(()=>$("a-nom").focus(),100);}
-function valAlumno(){$("a-btn").disabled=!($("a-nom").value.trim()&&parseFloat($("a-cuota").value)>0);}
+function abrirAlumno(){
+  $("a-id").value="";$("a-nom").value="";$("a-cuota").value="";$("a-grad").value=GRADOS[0];
+  $("a-padre").value="";$("a-identidad").value="";$("a-telefono").value="";$("a-direccion").value="";
+  $("a-tit").textContent="Agregar Alumno";$("a-btn").textContent="Agregar";
+  valAlumno();$("modal-alumno").classList.add("open");setTimeout(()=>$("a-nom").focus(),100);
+}
+function editarAlumno(id){
+  const a=alumnos.find(x=>x.id===id);if(!a)return;
+  $("a-id").value=a.id;$("a-nom").value=a.nombre;$("a-grad").value=a.grado;$("a-cuota").value=a.cuota||"";
+  $("a-padre").value=a.padre||"";$("a-identidad").value=a.identidad||"";
+  $("a-telefono").value=a.telefono||"";$("a-direccion").value=a.direccion||"";
+  $("a-tit").textContent="Editar Alumno";$("a-btn").textContent="Guardar cambios";
+  valAlumno();$("modal-alumno").classList.add("open");setTimeout(()=>$("a-nom").focus(),100);
+}
+function valAlumno(){$("a-btn").disabled=!($("a-nom").value.trim()&&parseFloat($("a-cuota").value)>0&&$("a-padre").value.trim());}
 async function guardarAlumno(){
-  const id=$("a-id").value,nombre=$("a-nom").value.trim(),grado=$("a-grad").value,cuota=parseFloat($("a-cuota").value);
-  if(!nombre||!cuota)return;
+  const id=$("a-id").value, nombre=$("a-nom").value.trim(), grado=$("a-grad").value, cuota=parseFloat($("a-cuota").value);
+  const padre=$("a-padre").value.trim(), identidad=$("a-identidad").value.trim();
+  const telefono=$("a-telefono").value.trim(), direccion=$("a-direccion").value.trim();
+  if(!nombre||!cuota||!padre)return;
   loader(true,"Guardando…");
   try{
+    const datos={nombre,grado,cuota,padre,identidad,telefono,direccion,activo:true};
     if(id){
-      await sbPatch("alumnos",id,{nombre,grado,cuota});
-      const i=alumnos.findIndex(a=>a.id===id);if(i>=0)alumnos[i]={...alumnos[i],nombre,grado,cuota};
+      await sbPatch("alumnos",id,datos);
+      const i=alumnos.findIndex(a=>a.id===id);if(i>=0)alumnos[i]={...alumnos[i],...datos};
+      pagos=pagos.map(p=>p.alumnoId===id?{...p,nombre,grado}:p);
     }else{
       const nid=genId();
-      await sbPost("alumnos",{id:nid,nombre,grado,cuota,activo:true});
-      alumnos.push({id:nid,nombre,grado,cuota});
+      await sbPost("alumnos",{id:nid,...datos});
+      alumnos.push({id:nid,...datos});
       alumnos.sort((a,b)=>a.nombre.localeCompare(b.nombre));
     }
     cerrar();renderAlumnos();
-  }catch(e){alert("Error: "+e.message);}
+  }catch(e){
+    if(e.message.includes("column")){
+      alert("Ejecuta en Supabase SQL Editor:\n\nALTER TABLE alumnos ADD COLUMN IF NOT EXISTS padre text DEFAULT '';\nALTER TABLE alumnos ADD COLUMN IF NOT EXISTS identidad text DEFAULT '';\nALTER TABLE alumnos ADD COLUMN IF NOT EXISTS telefono text DEFAULT '';\nALTER TABLE alumnos ADD COLUMN IF NOT EXISTS direccion text DEFAULT '';");
+    }else alert("Error: "+e.message);
+  }
   finally{loader(false);}
 }
 function confElim(id){const a=alumnos.find(x=>x.id===id);if(!a)return;elimId=id;$("conf-nom").textContent=a.nombre;$("modal-conf").classList.add("open");}
@@ -1839,6 +1892,316 @@ function excelInventario(){
     filas.push([i.prenda,i.talla,i.stock_inicial,vend,i.stock_actual,i.precio||PRECIO_BASE,i.stock_actual*(i.precio||PRECIO_BASE),i.fecha_ingreso||""]);
   });
   csvDl(`Inventario_Shalom_${HOY_STR}.csv`,filas);
+}
+
+// ════════════════════════════════════════════
+// CONTRATO DE MATRÍCULA
+// ════════════════════════════════════════════
+function verContrato(id){
+  const a=alumnos.find(x=>x.id===id);if(!a){alert("Alumno no encontrado.");return;}
+  const hoy=new Date();
+  const dia=hoy.getDate();
+  const mes=MESES[hoy.getMonth()];
+  const anio=hoy.getFullYear();
+  const esPlan10=a.plan==="10";
+  const cuotasTexto=esPlan10?"diez (10)":"doce (12)";
+  const cuotaFmt=a.cuota?`L. ${Number(a.cuota).toLocaleString("es-HN",{minimumFractionDigits:2})}`:"__________";
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Contrato — ${a.nombre}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Times New Roman",Times,serif;font-size:11pt;color:#000;background:#fff;padding:20mm 20mm 15mm 25mm;}
+h2{font-size:13pt;font-weight:bold;text-align:center;margin-bottom:10px;text-transform:uppercase;}
+p{text-align:justify;margin-bottom:8px;line-height:1.5;}
+.titulo-seccion{font-weight:bold;text-transform:uppercase;margin:12px 0 6px;}
+ul{margin:4px 0 8px 20px;}
+li{margin-bottom:4px;line-height:1.5;text-align:justify;}
+.firma-row{display:flex;justify-content:space-between;margin-top:30px;}
+.firma{text-align:center;width:45%;}
+.firma-linea{border-top:1px solid #000;margin-bottom:4px;margin-top:40px;}
+.firma-nombre{font-size:10pt;}
+.tabla-cuotas{width:100%;border-collapse:collapse;margin:8px 0;}
+.tabla-cuotas th{background:#1e3a8a;color:#fff;padding:5px 8px;font-size:10pt;text-align:center;}
+.tabla-cuotas td{border:1px solid #ccc;padding:4px 8px;font-size:10pt;text-align:center;}
+.campo{border-bottom:1px solid #000;display:inline-block;min-width:60px;}
+@page{margin:15mm 20mm;size:letter portrait;}
+@media print{body{padding:0;}button{display:none!important;}}
+</style></head><body>
+<div style="text-align:center;margin-bottom:12px;">
+  <button onclick="window.print()" style="background:#1e3a8a;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:11pt;cursor:pointer;margin-bottom:10px;">🖨️ Imprimir Contrato</button>
+</div>
+<h2>Contrato de Prestación de Servicios Educativos</h2>
+<p>Nosotros: <strong>SHALOM BILINGUAL SCHOOL GARDEN S. de R.L de C.V.</strong>, institución educativa constituida
+legalmente de conformidad con las leyes de La República de Honduras, con domicilio en la ciudad de San Pedro Sula,
+departamento de Cortés, con facultades suficientes para la celebración de esta clase de actos, y que en lo sucesivo se
+denominará <strong>"ESCUELA O COLEGIO"</strong>, por una parte, y por la otra, El/La Señor(a) Tutor Legalmente
+establecido: <strong>${a.padre||"___________________________"}</strong> con documento nacional de identificación
+N. <strong>${a.identidad||"___________________________"}</strong> mayor de edad, quien en adelante se llamará
+<strong>"EL PADRE O ENCARGADO"</strong>, del Alumno: <strong>${a.nombre}</strong> del Grado: <strong>${a.grado}</strong>
+con domicilio en <strong>${a.direccion||"___________________________"}</strong>
+Celular: <strong>${a.telefono||"___________________________"}</strong> convenimos en el presente Contrato de
+Prestación de Servicios Educacionales, y que estará sujeto al tenor de lo dispuesto en las siguientes cláusulas y condiciones:</p>
+
+<p class="titulo-seccion">Primero: Registro Inicial y Cuotas</p>
+<p>Me comprometo a cumplir puntualmente con las obligaciones financieras por servicios educativos a Shalom Bilingual School, considerando que:</p>
+<ul>
+<li>Debo llenar la hoja de matrícula de manera digital para que mi hijo quede debidamente inscrito.</li>
+<li>Las mensualidades deberán cancelarse en la fecha indicada por la Institución, siendo esta del 1 al 15 de cada mes. Por un valor de: <strong>${cuotaFmt}</strong> en: <strong>${cuotasTexto}</strong> cuotas mensuales durante el año escolar ${anio};</li>
+<li>A partir del 16 de cada mes tendrá un recargo 150.00 lempiras acumulables. A continuación, se detalla calendario de pagos:</li>
+</ul>
+
+${esPlan10?`
+<table class="tabla-cuotas"><thead><tr><th>Cuota</th><th>Fecha</th></tr></thead><tbody>
+<tr><td>1</td><td>01 – 15 febrero ${anio}</td></tr>
+<tr><td>2</td><td>01 – 15 marzo ${anio}</td></tr>
+<tr><td>3</td><td>01 – 15 abril ${anio}</td></tr>
+<tr><td>4</td><td>01 – 15 mayo ${anio}</td></tr>
+<tr><td>5</td><td>01 – 15 junio ${anio}</td></tr>
+<tr><td>6</td><td>01 – 15 julio ${anio}</td></tr>
+<tr><td>7</td><td>01 – 15 agosto ${anio}</td></tr>
+<tr><td>8</td><td>01 – 15 septiembre ${anio}</td></tr>
+<tr><td>9</td><td>01 – 15 octubre ${anio}</td></tr>
+<tr><td>10</td><td>01 – 15 noviembre ${anio}</td></tr>
+</tbody></table>`:`
+<table class="tabla-cuotas"><thead><tr><th>Cuota</th><th>Fecha</th><th>Cuota</th><th>Fecha</th></tr></thead><tbody>
+<tr><td>1</td><td>01–15 enero ${anio}</td><td>7</td><td>01–15 julio ${anio}</td></tr>
+<tr><td>2</td><td>01–15 febrero ${anio}</td><td>8</td><td>01–15 agosto ${anio}</td></tr>
+<tr><td>3</td><td>01–15 marzo ${anio}</td><td>9</td><td>01–15 septiembre ${anio}</td></tr>
+<tr><td>4</td><td>01–15 abril ${anio}</td><td>10</td><td>01–15 octubre ${anio}</td></tr>
+<tr><td>5</td><td>01–15 mayo ${anio}</td><td>11</td><td>01–15 noviembre ${anio}</td></tr>
+<tr><td>6</td><td>01–15 junio ${anio} (Dic)</td><td>12</td><td>01–15 diciembre ${anio}</td></tr>
+</tbody></table>`}
+
+<ul>
+<li>El talonario de pago deberá guardarlo cuidadosamente, ya que su reposición en caso de extravío deberá de solicitarlo por escrito en la Administración de la escuela y el valor del nuevo talonario es de Lps. 100.00</li>
+<li>Para entrega de reporte de progreso, exámenes parciales, entrega de notas; debo Presentar libreta actualizada con los pagos al día según la fecha que se solicite.</li>
+<li>Si gozo de algún descuento, media beca, o descuento familiar me comprometo a pagar en fecha establecida, caso contrario pagare la totalidad del pago correspondiente.</li>
+<li>Si mi hijo es graduando (Preparatoria /Noveno grado) los gastos de graduación, mensualidades deben estar canceladas antes del 15 de noviembre.</li>
+<li>Las Solicitudes de link de pago, estados de cuentas o envió de comprobantes de pago debo realizarlos únicamente al número de la administración de la escuela 3351-6723.</li>
+<li>Si el pago lo realizo por transferencia colocar en el detalle de que mes o actividad es el pago, si es deposito adjuntar un mensaje con el detalle.</li>
+<li>De existir mora o retraso en el pago de dos cuotas, dará lugar a que La Escuela le entregue al Padre o Encargado las constancias respectivas para que el alumno pueda ser trasladado a otro centro educativo; según ley educativa su traslado será a una escuela oficial.</li>
+<li>Entiendo que siendo una institución privada que cobra por servicios de educación bilingüe e incurre gastos, tiene el derecho de no admitir a mi hijo en clases y/o exámenes o entregar calificaciones/traslados/diplomas/títulos etc. Y que en ningún momento esta institución LE ESTA NEGANDO EL DERECHO DE EDUCACION A MI HIJO, simplemente se reserva el derecho de ser esta institución la que provee dicha educación privada bilingüe. Nuevamente, hago constar que recibiré calificaciones/diplomas/traslados/títulos etc. hasta el momento que mi cuenta quede CANCELADA EN SU TOTALIDAD.</li>
+<li>Conforme a lo anteriormente descrito firmamos este compromiso financiero, liberando de toda responsabilidad a la institución por cualquier acción que se derive de lo anterior.</li>
+</ul>
+
+<p class="titulo-seccion">Segundo: Ingreso y Normas del Centro Educativo</p>
+<ul>
+<li>Enviaré a mi hijo(a) puntualmente a recibir sus clases en su hora de entrada y en su hora de salida. Entrada: 6:55 am Pre-Básica y secundaria. Salida Preparatoria: 11:30 am, Primero grado 1:00 pm, Segundo grado a noveno grado 1:40 pm lunes a jueves, viernes 1:00 pm. El portón de entrada se cerrará a las 7:00 am para todos los niveles.</li>
+<li>Portar el sticker brindado por la escuela de manera Obligatoria para el acceso a la colonia como parte del control de seguridad.</li>
+<li>Si mi hijo llega entre las 7:00am y 7:10am perderá el derecho de recibir la primera clase. Tres llegadas tardes en un mes acumulan un día de suspensión.</li>
+<li>Me comprometo de igual manera ejercitar puntualidad a la hora de retirar a mi hijo(a): Preescolar 11:30 am, Básica 1:40 pm y los viernes 1:00pm.</li>
+<li>Seguiré el horario de atención de maestros: 1:45 pm a 3:00 pm. Programaré una cita con el maestro en dirección si necesito atención especial, sábado y domingo chats en silencio.</li>
+<li>Mantener la presentación personal: Portar su uniforme limpio, completo y su camisa siempre por dentro.</li>
+<li>Colaboraré estrechamente con el Maestro para que mi hijo(a) cumpla con sus obligaciones escolares, uso de plataformas, promover el respeto, responsabilidad, puntualidad, tolerancia, orden, disciplina, honradez.</li>
+<li>Asistiré o delegare un participante para las reuniones de padres de familia, en pro de la mejora de calidad educativa de mi hijo(a).</li>
+</ul>
+
+<p class="titulo-seccion">Tercero: Orden y Cuidado de Espacios del Centro y Otras Disposiciones</p>
+<ul>
+<li>Cooperar con el mantenimiento y buen funcionamiento del Centro Educativo (prohibido rayar o ensuciar las paredes, pupitres, baños). El pupitre asignado debe mantenerse limpio; en caso de daño el padre deberá cancelar L. 1,000.00 por concepto de reparación o reposición.</li>
+<li>Me comprometo a cumplir el reglamento que prohíbe usar joyas, celulares, relojes inteligentes, instrumentos cortopunzantes, juguetes y cualquier objeto que ponga en peligro la seguridad física, moral o espiritual.</li>
+<li>En caso de objetos olvidados me comprometo a pagar L. 20.00 para su retiro en los próximos 10 días.</li>
+<li>Utilizaré vestuario adecuado al visitar la institución.</li>
+<li>Autorizo que, en caso de crisis emocional, se brinden los primeros auxilios psicológicos bajo el entendido que esta atención será brindada por la psicóloga de la escuela.</li>
+<li>Autorizo que mi hijo/a forme parte de la imagen de las páginas oficiales de la institución, permitiendo que se le tomen fotografías/videos educativos para ser publicadas en los diferentes medios.</li>
+<li>Autorizo expresamente a la institución para que mi hijo participe en charlas, talleres y actividades formativas orientadas al desarrollo integral personal.</li>
+<li>En caso de celebrar el cumpleaños de mi hijo, será el viernes, en la última hora de clases, previa coordinación con dirección.</li>
+<li>En caso de no cumplir con todo lo anterior acepto acatar las medidas que estimen convenientes las autoridades del Centro Educativo, según reglamento.</li>
+</ul>
+
+<p>Conforme a lo anteriormente descrito firmamos este compromiso, liberando de toda responsabilidad a la institución por cualquier acción que se derive de lo anterior.</p>
+<p>Las partes firman de conformidad el presente Contrato en la Ciudad de San Pedro Sula a los <strong>${dia}</strong> del mes de <strong>${mes}</strong> del año <strong>${anio}</strong>.</p>
+
+<div class="firma-row">
+  <div class="firma">
+    <div class="firma-linea"></div>
+    <div class="firma-nombre"><strong>${a.padre||"Padre de Familia / Encargado"}</strong></div>
+    <div class="firma-nombre">Identidad: ${a.identidad||"__________________________"}</div>
+  </div>
+  <div class="firma">
+    <div class="firma-linea"></div>
+    <div class="firma-nombre"><strong>Representante Shalom Bilingual School</strong></div>
+  </div>
+</div>
+</body></html>`;
+
+  const ventana=window.open("","_blank","width=900,height=700");
+  if(ventana){ventana.document.write(html);ventana.document.close();}
+  else{
+    // Si el navegador bloquea popups, abrir en iframe
+    const iframe=document.createElement("iframe");
+    iframe.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:#fff;";
+    iframe.srcdoc=html;
+    document.body.appendChild(iframe);
+    // Botón para cerrar
+    const btn=document.createElement("button");
+    btn.textContent="✕ Cerrar contrato";
+    btn.style.cssText="position:fixed;top:10px;right:10px;z-index:10000;background:#dc2626;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;";
+    btn.onclick=()=>{document.body.removeChild(iframe);document.body.removeChild(btn);};
+    document.body.appendChild(btn);
+  }
+}
+
+// ════════════════════════════════════════════
+// CONTRATO DE MATRÍCULA
+// ════════════════════════════════════════════
+function renderContrato(){
+  const gradSel=$("ct-grad");
+  const ga=gradSel.value;
+  gradSel.innerHTML='<option value="">Todos los grados</option>'+GRADOS.map(g=>`<option${g===ga?" selected":""}>${g}</option>`).join("");
+  filtrarContrato();
+}
+
+function filtrarContrato(){
+  const bus=($("ct-bus").value||"").toLowerCase();
+  const grad=$("ct-grad").value;
+  const fil=alumnos.filter(a=>
+    (!grad||a.grado===grad)&&
+    (!bus||a.nombre.toLowerCase().includes(bus))
+  );
+  const lista=$("ct-lista");
+  if(!fil.length){lista.innerHTML=`<div style="text-align:center;padding:40px;color:#94a3b8;grid-column:1/-1;">No se encontraron alumnos.</div>`;return;}
+  lista.innerHTML=fil.map(a=>`
+    <div style="background:#fff;border-radius:11px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07);border-left:4px solid #1e3a8a;">
+      <div style="font-size:.86rem;font-weight:700;color:#1e293b;margin-bottom:4px;">👤 ${a.nombre}</div>
+      <div style="font-size:.74rem;color:#64748b;margin-bottom:3px;">📚 ${a.grado}</div>
+      ${a.padre?`<div style="font-size:.74rem;color:#64748b;margin-bottom:3px;">👨 ${a.padre}</div>`:""}
+      ${a.telefono?`<div style="font-size:.74rem;color:#64748b;margin-bottom:3px;">📱 ${a.telefono}</div>`:""}
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <button onclick="imprimirContrato('${a.id}')"
+          style="flex:1;background:#1e3a8a;color:#fff;border:none;border-radius:8px;padding:8px;font-size:.78rem;font-weight:700;cursor:pointer;">
+          🖨️ Imprimir contrato
+        </button>
+        <button onclick="editarAlumno('${a.id}')"
+          style="background:#eff6ff;color:#1e3a8a;border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px;font-size:.78rem;cursor:pointer;">
+          ✏️
+        </button>
+      </div>
+      ${!a.padre||!a.telefono?`<div style="font-size:.68rem;color:#f59e0b;margin-top:6px;">⚠️ Faltan datos del padre/tutor. Edita el alumno.</div>`:""}
+    </div>`).join("");
+}
+
+function imprimirContrato(id){
+  const a=alumnos.find(x=>x.id===id);
+  if(!a){alert("Alumno no encontrado.");return;}
+  const fecha=new Date();
+  const dia=fecha.getDate();
+  const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const mesNombre=meses[fecha.getMonth()];
+  const anio=fecha.getFullYear();
+  const cuotas=a.plan==="10"?"10":"12";
+  const cuotaMonto=a.cuota?fmt(a.cuota):"_______________";
+
+  // Tabla de pagos según plan
+  const filasTabla10=`
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">1</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 febrero 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">2</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 marzo 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">3</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 abril 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">4</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 mayo 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">5</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 junio 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">6</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 julio 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">7</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 agosto 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">8</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 septiembre 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">9</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 octubre 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">10</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 noviembre 2026</td></tr>`;
+  const filasTabla12=filasTabla10+`
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">11</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 enero 2026</td></tr>
+    <tr><td style="border:1px solid #000;padding:4px 8px;text-align:center;">12</td><td style="border:1px solid #000;padding:4px 8px;">01 – 15 diciembre 2026</td></tr>`;
+  const filasTabla=cuotas==="10"?filasTabla10:filasTabla12;
+
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:"Times New Roman",serif;font-size:11pt;color:#000;background:#fff;padding:20mm 20mm 15mm 20mm;}
+    h1{text-align:center;font-size:13pt;text-decoration:underline;margin-bottom:12px;}
+    p{margin-bottom:8px;text-align:justify;line-height:1.5;}
+    .campo{border-bottom:1px solid #000;display:inline-block;min-width:180px;font-weight:bold;}
+    .seccion{font-weight:bold;text-decoration:underline;margin-top:14px;margin-bottom:6px;display:block;}
+    ol{margin-left:20px;margin-bottom:8px;}
+    ol li{margin-bottom:5px;line-height:1.5;text-align:justify;}
+    ul{margin-left:20px;margin-bottom:8px;}
+    ul li{margin-bottom:4px;line-height:1.5;text-align:justify;}
+    table{border-collapse:collapse;margin:8px 0;}
+    .firmas{display:flex;justify-content:space-around;margin-top:40px;text-align:center;}
+    .firma-linea{border-top:1px solid #000;width:180px;padding-top:4px;font-size:10pt;}
+    @page{margin:15mm 18mm;size:letter portrait;}
+    @media print{body{padding:0;}}
+  </style>
+  </head><body>
+  <h1>CONTRATO DE PRESTACIÓN DE SERVICIOS EDUCATIVOS</h1>
+
+  <p>Nosotros: <strong>SHALOM BILINGUAL SCHOOL GARDEN S. de R.L de C.V.</strong>, institución educativa constituida legalmente de conformidad con las leyes de La República de Honduras, con domicilio en la ciudad de San Pedro Sula, departamento de Cortés, con facultades suficientes para la celebración de esta clase de actos, y que en lo sucesivo se denominará <strong>"ESCUELA O COLEGIO"</strong>, por una parte, y por la otra, El/La Señor(a) Tutor Legalmente establecido: <span class="campo">${a.padre||"_______________________________"}</span> con documento nacional de identificación N. <span class="campo">${a.identidad||"_______________________"}</span> mayor de edad, quien en adelante se llamará <strong>"EL PADRE O ENCARGADO"</strong>, del Alumno: <span class="campo">${a.nombre}</span> del Grado: <span class="campo">${a.grado}</span> con domicilio en <span class="campo">${a.direccion||"_______________________________"}</span> Celular <span class="campo">${a.telefono||"_______________"}</span> convenimos en el presente Contrato de Prestación de Servicios Educacionales, y que estará sujeto al tenor de lo dispuesto en las siguientes cláusulas y condiciones:</p>
+
+  <span class="seccion">PRIMERO: REGISTRO INICIAL Y CUOTAS</span>
+  <p>Me comprometo a cumplir puntualmente con las obligaciones financieras por servicios educativos a Shalom Bilingual School, considerando que:</p>
+  <ol type="a">
+    <li>Debo llenar la hoja de matrícula de manera digital para que mi hijo quede debidamente inscrito.</li>
+    <li>Las mensualidades deberán cancelarse en la fecha indicada por la Institución, siendo esta del 1 al 15 de cada mes. Por un valor de: <span class="campo">${cuotaMonto}</span> en: <span class="campo">${cuotas}</span> cuotas mensuales durante el año escolar 2026;</li>
+    <li>A partir del 16 de cada mes tendrá un recargo 150.00 lempiras acumulables. A continuación, se detalla calendario de pagos:
+      <br><br>
+      <table style="border-collapse:collapse;">
+        <tr style="background:#f0f0f0;"><th style="border:1px solid #000;padding:4px 8px;">Cuota</th><th style="border:1px solid #000;padding:4px 8px;">Fecha</th></tr>
+        ${filasTabla}
+      </table>
+    </li>
+    <li>El talonario de pago deberá guardarlo cuidadosamente, ya que su reposición en caso de extravío deberá de solicitarlo por escrito en la Administración de la escuela y el valor del nuevo talonario es de Lps. 100.00</li>
+    <li>Para entrega de reporte de progreso, exámenes parciales, entrega de notas; debo Presentar libreta actualizada con los pagos al día según la fecha que se solicite.</li>
+    <li>Si gozo de algún descuento, media beca, o descuento familiar me comprometo a pagar en fecha establecida, caso contrario pagare la totalidad del pago correspondiente.</li>
+    <li>Si mi hijo es graduando (Preparatoria /Noveno grado) los gastos de graduación, mensualidades deben estar canceladas antes del 15 de noviembre.</li>
+    <li>Las Solicitudes de link de pago, estados de cuentas o envió de comprobantes de pago debo realizarlos únicamente al número de la administración de la escuela <strong>3351-6723.</strong></li>
+    <li><strong>Si el pago lo realizo por transferencia</strong> colocar en el detalle de que mes o actividad es el pago, si es deposito adjuntar un mensaje con el detalle.</li>
+    <li>De existir mora o retraso en el pago de dos cuotas, dará lugar a que La Escuela le entregue al Padre o Encargado las constancias respectivas para que el alumno pueda ser trasladado a otro centro educativo; según ley educativa su traslado será a una escuela oficial.</li>
+    <li>Entiendo que siendo una institución privada que cobra por servicios de educación bilingüe e incurre gastos, tiene el derecho de no admitir a mi hijo en clases y/o exámenes o entregar calificaciones/traslados/diplomas/títulos etc. Y que en ningún momento esta institución LE ESTA NEGANDO EL DERECHO DE EDUCACION A MI HIJO, simplemente se reserva el derecho de ser esta institución la que provee dicha educación privada bilingüe. Nuevamente, hago constar que recibiré calificaciones/diplomas/traslados/títulos etc. hasta el momento que mi cuenta quede <strong>CANCELADA EN SU TOTALIDAD.</strong></li>
+    <li>Conforme a lo anteriormente descrito firmamos este compromiso financiero, liberando de toda responsabilidad a la institución por cualquier acción que se derive de lo anterior.</li>
+  </ol>
+
+  <span class="seccion">SEGUNDO: INGRESO Y NORMAS DEL CENTRO EDUCATIVO</span>
+  <ol type="a">
+    <li>Enviaré a mi hijo (a) puntualmente a recibir sus clases en su hora de entrada y en su hora de salida. <strong>Según art. 45 del reglamento interno.</strong><br>
+    <strong>Entrada:</strong> 6:55 am Pre-Básica y secundaria<br>
+    <strong>Salida:</strong> Preparatoria: 11:30 am, Primero grado 1:00 pm, Segundo grado a noveno grado 1:40 pm lunes a jueves, viernes 1:00 pm<br>
+    El portón de <u><strong>entrada se cerrará a las 7:00 am</strong></u> para todos los niveles. El portón de <strong>salida se cerrará a las 2:00 pm.</strong></li>
+    <li><strong>Portar el sticker brindado por la escuela de manera Obligatoria</strong> para el acceso a la colonia como parte del control de seguridad.</li>
+    <li>Si mi hijo llega entre las 7:00am y 7:10am perderá el derecho de recibir la primera clase. Tres llegadas tardes en un mes acumulan un día de suspensión.</li>
+    <li>Me comprometo de igual manera ejercitar puntualidad a la hora de retirar a mi hijo (a): Hora de salida para Preescolar 11:30 pm, Básica 1:40 p.m. y los viernes 1:00pm.</li>
+    <li>De necesitar un <strong>código de acceso</strong> a la colonia por algún imprevisto o reunión solicitarlo con 15 minutos de anticipación.</li>
+    <li><strong>Seguiré el horario de atención de maestros:</strong> 1:45 pm a 3:00 pm. Programaré una cita con el maestro en dirección si necesito atención especial.</li>
+    <li><strong>Dirección atenderá únicamente llamadas de emergencia.</strong></li>
+    <li><strong>Mantener la presentación personal:</strong> Portar su uniforme limpio, completo y su camisa siempre por dentro.</li>
+    <li><strong>Colaboraré estrechamente con el Maestro</strong> para que mi hijo (a) cumpla con sus obligaciones escolares.</li>
+    <li><strong>Asistiré o delegare un participante para las reuniones</strong> de padres de familia.</li>
+  </ol>
+
+  <span class="seccion">TERCERO: ORDEN Y CUIDADO ESPACIOS DEL CENTRO Y OTRAS DISPOSICIONES</span>
+  <ol type="a">
+    <li><strong>Cooperar con el mantenimiento y buen funcionamiento del Centro Educativo.</strong> El pupitre será asignado a cada estudiante; en caso de daño, el padre deberá cancelar 1,000 lempiras.</li>
+    <li><strong>Me comprometo a cumplir el reglamento en donde prohíbe usar joyas, celulares,</strong> relojes inteligentes, instrumentos cortopunzantes, etc.</li>
+    <li><strong>En caso de objetos olvidados</strong> me comprometo a pagar 20 lempiras para su retiro en los próximos 10 días.</li>
+    <li><strong>Utilizaré vestuario adecuado</strong> al visitar la institución.</li>
+    <li><strong>Autorizo que, en caso de crisis emocional,</strong> se brinden los primeros auxilios psicológicos.</li>
+    <li><strong>Conozco los parámetros de excelencia académica y distinguidos.</strong></li>
+    <li><strong>Autorizo que mi hijo/a forme parte de la imagen de las páginas oficiales de la institución.</strong></li>
+    <li><strong>Autorizo expresamente</strong> a la institución para que mi hijo participe en charlas, talleres y actividades formativas orientadas al desarrollo integral personal.</li>
+    <li>En caso de celebrar el cumpleaños de mi hijo, será el viernes, en la última hora de clases, previa coordinación con dirección.</li>
+    <li>En caso de no cumplir con todo lo anterior acepto acatar las medidas que estimen convenientes las autoridades del Centro Educativo.</li>
+  </ol>
+
+  <p style="margin-top:12px;">Conforme a lo anteriormente descrito firmamos este compromiso, liberando de toda responsabilidad a la institución por cualquier acción que se derive de lo anterior.</p>
+  <p>Las partes firman de conformidad el presente Contrato en la Ciudad de San Pedro Sula a los <span class="campo" style="min-width:30px;">${dia}</span> del mes de <span class="campo">${mesNombre}</span> del año ${anio}</p>
+
+  <div class="firmas">
+    <div><div class="firma-linea">Firma del Padre / Tutor<br><small>${a.padre||""}</small></div></div>
+    <div><div class="firma-linea">Firma Dirección<br><small>Escuela Bilingüe Shalom</small></div></div>
+  </div>
+
+  <script>window.onload=function(){window.print();};<\/script>
+  </body></html>`;
+
+  const iframe=document.createElement("iframe");
+  iframe.style.cssText="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;";
+  document.body.appendChild(iframe);
+  iframe.srcdoc=html;
+  setTimeout(()=>document.body.removeChild(iframe),10000);
 }
 
 // ════════════════════════════════════════════
